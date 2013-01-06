@@ -35,26 +35,29 @@ func main() {
 
 	in := textproto.NewReader(bufio.NewReader(os.Stdin))
 
-	keepalive := make(chan bool)
+	keepalive, done := make(chan bool), make(chan bool)
 
 	go func() {
 		for {
-			line, err := in.ReadLine()
+			_, err := in.ReadLine()
 			keepalive <- true
 			if err != nil {
 				break
 			}
 		}
+		done <- true
 	}()
 
+	start := time.Now()
 mainloop:
 	for {
 		select {
 		case <-keepalive:
+		case <-done:
+			break mainloop
 		case <-time.After(*timeout):
-			log.Print("Timeout has expired!")
 			break mainloop
 		}
 	}
-	log.Print("Done!")
+	log.Printf("%s silence achieved after %s", *timeout, time.Since(start))
 }
