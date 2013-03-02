@@ -21,28 +21,64 @@ package main
 import (
 	"bufio"
 	"flag"
+	"fmt"
+	"io"
 	"log"
 	"net/textproto"
 	"os"
+	"os/exec"
 	"time"
 )
 
 var timeout = flag.Duration("timeout", 1*time.Second,
 	"Amount of time for which silence required before quitting")
 
+var cmdstr = flag.String("command", "",
+	"Command to execute and wait for silence")
+
+var verbose = flag.Bool("verbose", false, "Show stderr of process, # lines "+
+	"printed")
+
 func main() {
 	flag.Parse()
 
-	in := textproto.NewReader(bufio.NewReader(os.Stdin))
-
 	keepalive, done := make(chan bool), make(chan bool)
 
+	var cmd *exec.Cmd
+	var input io.Reader = os.Stdin
+
+	if *cmdstr != "" {
+		cmd = exec.Command("sh", "-c", *cmdstr)
+		if *verbose {
+			cmd.Stderr = os.Stderr
+		}
+		var err error
+		input, err = cmd.StdoutPipe()
+		if err != nil {
+			panic(err)
+		}
+		go func() {
+			err := cmd.Run()
+			log.Print("Command exited: ", err)
+			done <- true
+		}()
+	}
+
+	in := textproto.NewReader(bufio.NewReader(input))
+
 	go func() {
+		var n int64
+		last := time.Now()
 		for {
 			_, err := in.ReadLine()
 			keepalive <- true
 			if err != nil {
 				break
+			}
+			if *verbose {
+				fmt.Printf("%d lines (%.2fs)\r", n, time.Since(last).Seconds())
+				n++
+				last = time.Now()
 			}
 		}
 		done <- true
@@ -58,6 +94,9 @@ mainloop:
 		case <-time.After(*timeout):
 			break mainloop
 		}
+	}
+	if cmd != nil {
+		cmd.Process.Kill()
 	}
 	log.Printf("%s silence achieved after %s", *timeout, time.Since(start))
 }
