@@ -1,5 +1,4 @@
-waitsilence
------------
+# waitsilence
 
 Delay until `stdin` has recieved no input for a specified time, and then exit.
 
@@ -56,7 +55,6 @@ now occupy more than 1.5TB.
 
 ## Installation
 
-Use the [`go get`](//youtu.be/XCsL89YtqCs) tool, which will install it to your
-`$GOPATH`.
-
-	go get github.com/pwaller/waitsilence
+```bash
+make build
+```
