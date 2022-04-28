@@ -1,5 +1,4 @@
-waitsilence
------------
+# waitsilence
 
 Delay until `stdin` has recieved no input for a specified time, and then exit.
 

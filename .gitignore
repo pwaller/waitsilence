@@ -1,1 +1,9 @@
-/waitsilence
+.DS_Store
+*~
+/.idea/
+/.env
+
+/waitsilence*
+/dist/
+
+dist/
